@@ -1,17 +1,32 @@
 'use client';
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 
 export default function Home() {
   const [fixtureId, setFixtureId] = useState('');
   const [predictions, setPredictions] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
 
   const fetchPredictions = async (id: string) => {
     setLoading(true);
-    const res = await fetch(`/api/predictions?fixture=${id}`);
-    const data = await res.json();
-    setPredictions(data.response || []);
-    setLoading(false);
+    setError('');
+    try {
+      const res = await fetch(`/api/predictions?fixture=${id}`);
+      const data = await res.json();
+      if (data.errors && Object.keys(data.errors).length > 0) {
+        setError('API error: ' + JSON.stringify(data.errors));
+        setPredictions([]);
+      } else if (data.response && data.response.length > 0) {
+        setPredictions(data.response);
+      } else {
+        setPredictions([]);
+        setError('No predictions found for this fixture.');
+      }
+    } catch (e) {
+      setError('Network or server error.');
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -24,7 +39,7 @@ export default function Home() {
           type="text"
           value={fixtureId}
           onChange={(e) => setFixtureId(e.target.value)}
-          placeholder="Enter Fixture ID"
+          placeholder="Enter Fixture ID (e.g., 1185947)"
           className="w-full p-3 border rounded-lg shadow-sm"
         />
         <button
@@ -34,7 +49,8 @@ export default function Home() {
           Get Predictions
         </button>
       </div>
-      {loading && <p className="text-center">Loading...</p>}
+      {loading && <p className="text-center text-gray-600">Loading...</p>}
+      {error && <p className="text-center text-red-500">{error}</p>}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 max-w-5xl mx-auto">
         {predictions.map((p: any) => (
           <div key={p.fixture.id} className="bg-white rounded-xl shadow-md p-6">
