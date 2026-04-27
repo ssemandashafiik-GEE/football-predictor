@@ -7,23 +7,33 @@ export async function GET(request: Request) {
     return NextResponse.json({ error: 'fixture parameter required' }, { status: 400 });
   }
 
-  // Temporary mock prediction – real model will be plugged in later
-  const mockPrediction = {
-    response: [{
-      fixture: { id: fixtureId },
-      teams: {
-        home: { name: "Home Team" },
-        away: { name: "Away Team" }
-      },
-      predictions: {
-        percent: {
-          home: "45",
-          draw: "25",
-          away: "30"
-        }
-      }
-    }]
-  };
+  // Dummy average stats – later you can fetch real stats based on fixtureId
+  const homeStats = [1.5, 0.8, 13, 4.5, 10, 5, 2, 0.1];
+  const awayStats = [1.2, 0.7, 11, 3.8, 9, 6, 2, 0.1];
 
-  return NextResponse.json(mockPrediction);
+  try {
+    const res = await fetch(`${process.env.MODEL_API_URL}/predict`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ home_stats: homeStats, away_stats: awayStats }),
+    });
+    if (!res.ok) throw new Error('Model API error');
+    const data = await res.json();
+
+    return NextResponse.json({
+      response: [{
+        fixture: { id: fixtureId },
+        teams: { home: { name: "Home Team" }, away: { name: "Away Team" } },
+        predictions: {
+          percent: {
+            home: (data.home_win * 100).toFixed(0),
+            draw: (data.draw * 100).toFixed(0),
+            away: (data.away_win * 100).toFixed(0)
+          }
+        }
+      }]
+    });
+  } catch (err) {
+    return NextResponse.json({ error: 'Prediction failed' }, { status: 502 });
+  }
 }
