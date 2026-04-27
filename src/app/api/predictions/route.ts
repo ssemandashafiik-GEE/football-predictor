@@ -3,21 +3,27 @@ import { NextResponse } from 'next/server';
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
   const fixtureId = searchParams.get('fixture');
-
   if (!fixtureId) {
     return NextResponse.json({ error: 'fixture parameter required' }, { status: 400 });
   }
 
-  const res = await fetch(
-    `https://v3.football.api-sports.io/predictions?fixture=${fixtureId}`,
-    {
-      headers: {
-        'x-apisports-key': process.env.API_FOOTBALL_KEY!,
+  // Temporary mock prediction – real model will be plugged in later
+  const mockPrediction = {
+    response: [{
+      fixture: { id: fixtureId },
+      teams: {
+        home: { name: "Home Team" },
+        away: { name: "Away Team" }
       },
-      next: { revalidate: 3600 }, // ISR cache for 1 hour
-    }
-  );
+      predictions: {
+        percent: {
+          home: "45",
+          draw: "25",
+          away: "30"
+        }
+      }
+    }]
+  };
 
-  const data = await res.json();
-  return NextResponse.json(data);
+  return NextResponse.json(mockPrediction);
 }
