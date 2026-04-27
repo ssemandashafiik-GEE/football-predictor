@@ -7,15 +7,20 @@ export async function GET(request: Request) {
     return NextResponse.json({ error: 'fixture parameter required' }, { status: 400 });
   }
 
-  // Dummy average stats – later you can fetch real stats based on fixtureId
-  const homeStats = [1.5, 0.8, 13, 4.5, 10, 5, 2, 0.1];
-  const awayStats = [1.2, 0.7, 11, 3.8, 9, 6, 2, 0.1];
+  // Hardcoded model URL for immediate testing – later you can replace with process.env.MODEL_API_URL
+  const modelUrl = 'https://shafik256-football-predictor-api.hf.space';
+
+  // Dummy stats – later replace with real stats
+  const body = {
+    home_stats: [1.5, 0.8, 13, 4.5, 10, 5, 2, 0.1],
+    away_stats: [1.2, 0.7, 11, 3.8, 9, 6, 2, 0.1]
+  };
 
   try {
-    const res = await fetch(`${process.env.MODEL_API_URL}/predict`, {
+    const res = await fetch(`${modelUrl}/predict`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ home_stats: homeStats, away_stats: awayStats }),
+      body: JSON.stringify(body),
     });
     if (!res.ok) throw new Error('Model API error');
     const data = await res.json();
@@ -23,7 +28,10 @@ export async function GET(request: Request) {
     return NextResponse.json({
       response: [{
         fixture: { id: fixtureId },
-        teams: { home: { name: "Home Team" }, away: { name: "Away Team" } },
+        teams: {
+          home: { name: 'Home Team' },
+          away: { name: 'Away Team' }
+        },
         predictions: {
           percent: {
             home: (data.home_win * 100).toFixed(0),
